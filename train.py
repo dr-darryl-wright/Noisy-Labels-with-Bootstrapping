@@ -38,14 +38,7 @@ def noisify_mnist():
       y_train_noisy[i] += y_train[i]
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
-def train_baseline_model():
-  pass
-  
-def train_model_mnist_recon_loss():
-
-  x_train, y_train, y_train_noisy, x_test, y_test, map, _ = \
-    noisify_mnist()
-  
+def train_baseline_model(x_train, y_train, validation_data):
   # build the model for pre-training
   inputs = Input(shape=(784,))
   x = Dense(500, activation='relu', \
@@ -67,12 +60,26 @@ def train_model_mnist_recon_loss():
   # train the model on the noisy labels
   callbacks = [ModelCheckpoint('best_pre-training.h5', save_best_only=True, \
     save_weights_only=True)]
-  """
-  base_model.fit(x_train[:50000], np_utils.to_categorical(y_train_noisy[:50000]), \
-    validation_data=(x_train[50000:], np_utils.to_categorical(y_train[50000:])), \
-    callbacks=callbacks, batch_size=256, epochs=500)
-  """
-  base_model.load_weights('best_pre-training.h5')
+
+  try:
+    base_model.load_weights('best_pre-training.h5')
+  except FileNotFoundError:
+    base_model.fit(x_train, np_utils.to_categorical(y_train), \
+      validation_data=validation_data, \
+      callbacks=callbacks, batch_size=256, epochs=500)
+  
+  return base_model
+  
+def train_model_mnist_recon_loss():
+
+  x_train, y_train, y_train_noisy, x_test, y_test, map, _ = \
+    noisify_mnist()
+
+  m = 50000
+  
+  base_model = train_baseline_model(x_train[:m], y_train_noisy[:m], \
+    (x_train[m:], y_train[m:]))
+
   print(base_model.evaluate(x_test, np_utils.to_categorical(y_test)))
   
   # build the consistency model
