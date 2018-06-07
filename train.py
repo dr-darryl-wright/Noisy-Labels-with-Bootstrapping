@@ -11,7 +11,7 @@ from keras import regularizers
 from keras.datasets import mnist
 from keras.utils import np_utils
 
-def noisify_mnist():
+def noisify_mnist(noise_level):
   # load the data
   (x_train, y_train), (x_test, y_test) = mnist.load_data()
   x_train = np.reshape(x_train, (x_train.shape[0], 784))
@@ -21,7 +21,7 @@ def noisify_mnist():
   np.random.seed(0)
   noise_mapping = np.array([i for i in range(10)])
   np.random.shuffle(noise_mapping)
-  noise_levels = [0.48 for i in range(10)]
+  noise_levels = [noise_level for i in range(10)]
   print(noise_mapping)
   print(np.round(noise_levels, 3))
   map = np.zeros((10,10))
@@ -39,6 +39,7 @@ def noisify_mnist():
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
 def train_baseline_model(x_train, y_train, validation_data):
+
   # build the model for pre-training
   inputs = Input(shape=(784,))
   x = Dense(500, activation='relu', \
@@ -73,12 +74,12 @@ def train_baseline_model(x_train, y_train, validation_data):
 def train_model_mnist_recon_loss():
 
   x_train, y_train, y_train_noisy, x_test, y_test, map, _ = \
-    noisify_mnist()
+    noisify_mnist(0.48)
 
   m = 50000
   
   base_model = train_baseline_model(x_train[:m], y_train_noisy[:m], \
-    (x_train[m:], y_train[m:]))
+    validation_data=(x_train[m:], y_train[m:]))
 
   print(base_model.evaluate(x_test, np_utils.to_categorical(y_test)))
   
@@ -90,37 +91,9 @@ def train_model_mnist_recon_loss():
     kernel_regularizer=regularizers.l2(0.0001), \
     kernel_initializer='identity', \
     use_bias=False)
-   
-  #recon_layer = Dense(784, activation='relu', name='recon', \
-  #  kernel_regularizer=regularizers.l2(0.0001), \
-  #  bias_regularizer=regularizers.l2(0.0001))
-
-  #recon_layer = Lambda(lambda x:x+0, name='recon')
-
-  #t_layer.build(input_shape=q._keras_shape)
-  #recon_layer.build(input_shape=q._keras_shape)
-  
-  #recon_layer.kernel = t_layer.kernel
-  #recon_layer.bias   = t_layer.bias
-  #recon_layer._trainable_weights = []
-  #recon_layer._trainable_weights.append(recon_layer.kernel)
-  #recon_layer._trainable_weights.append(recon_layer.bias)
-
-  #print(recon_layer.weights == t_layer.weights)
 
   t = t_layer(q)
-  #recon = recon_layer(q)
-  """
-  x = Dense(10, activation='softmax', \
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(q)
-  x = Dense(300, activation='relu', \
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(x)
-  x = Dense(500, activation='relu', \
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(x)
-  """
+
   recon = Dense(784, activation='relu', name='recon', \
     kernel_regularizer=regularizers.l2(0.0001), \
     bias_regularizer=regularizers.l2(0.0001))(q)
@@ -131,21 +104,18 @@ def train_model_mnist_recon_loss():
   model.compile(optimizer=sgd, metrics=['acc'], \
     loss={'t': 'categorical_crossentropy', 'recon': 'mse'},\
     loss_weights={'t': 1., 'recon': 0.005})
-  """
-  model.compile(optimizer='adam', metrics=['acc'], \
-    loss={'t': 'categorical_crossentropy', 'recon': 'mse'},\
-    loss_weights={'t': 1., 'recon': 0.005})
-  """
+
   model.summary()
   callbacks = [ModelCheckpoint('best_training.h5', save_best_only=True, \
     save_weights_only=True)]
 
-  """
-  model.fit(x_train[:50000], [np_utils.to_categorical(y_train_noisy[:50000]), x_train[:50000]], \
-    validation_data=(x_train[50000:], [np_utils.to_categorical(y_train[50000:]), x_train[50000:]]),\
-    callbacks=callbacks, batch_size=256, epochs=500)
-  """
-  model.load_weights('best_training.h5')
+  try:
+    model.load_weights('best_training.h5')
+  except FileNotFoundError:
+    model.fit(x_train[:50000], [np_utils.to_categorical(y_train_noisy[:50000]), x_train[:50000]], \
+      validation_data=(x_train[50000:], [np_utils.to_categorical(y_train[50000:]), x_train[50000:]]),\
+      callbacks=callbacks, batch_size=256, epochs=500)
+
   print(base_model.evaluate(x_test, np_utils.to_categorical(y_test)))
   print(base_model.evaluate(x_train[50000:], np_utils.to_categorical(y_train[50000:])))
 
@@ -158,4 +128,8 @@ def train_model_mnist_recon_loss():
   ax2.imshow(W, cmap='gray')
   plt.show()
 
-train_model_mnist_recon_loss()
+def main():
+  train_model_mnist_recon_loss()
+
+if __name__ == '__main__':
+  main()
