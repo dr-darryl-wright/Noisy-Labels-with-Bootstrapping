@@ -2,4 +2,10 @@
 Keras implementation of Training Deep Neural Networks on Noisy Labels with Bootstrapping, Reed et al. 2015
 
 ## MNIST with noisy Labels
+Below are the results of experiments from the original paper using MNIST.
+
 ![alt text](https://github.com/dwright04/Noisy-Labels-with-Bootstrapping/blob/master/Reed_et_al_figure_2.png)
+
+### Open questions for reproducing
+* What data is the classification accuracy in Figure 2. measured on?
+* How do they determine when to stop training?
