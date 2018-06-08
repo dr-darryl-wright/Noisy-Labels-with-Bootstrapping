@@ -13,7 +13,7 @@ from keras.utils import np_utils
 
 np.random.seed(0)
 
-def noisify_mnist(noise_level, noise_mapping=None):
+def noisify_mnist(noise_fraction, noise_mapping=None):
   # load the data
   (x_train, y_train), (x_test, y_test) = mnist.load_data()
   x_train = np.reshape(x_train, (x_train.shape[0], 784))
@@ -23,10 +23,10 @@ def noisify_mnist(noise_level, noise_mapping=None):
   if noise_mapping is None:
     noise_mapping = np.array([i for i in range(10)])
     np.random.shuffle(noise_mapping)
-  noise_levels = [noise_level for i in range(10)]
+  noise_fractions = [noise_fraction for i in range(10)]
   
   print(noise_mapping)
-  print(np.round(noise_levels, 3))
+  print(np.round(noise_fractions, 3))
   
   map = np.zeros((10,10))
   for i in range(10):
@@ -34,7 +34,7 @@ def noisify_mnist(noise_level, noise_mapping=None):
   
   y_train_noisy = np.zeros(y_train.shape)
   for i in range(y_train.shape[0]):
-    if np.random.rand() <= noise_levels[y_train[i]]:
+    if np.random.rand() <= noise_fractions[y_train[i]]:
       #print('%d -> %d' % (y_train[i], noise_mapping[y_train[i]]))
       y_train_noisy[i] += noise_mapping[y_train[i]]
     else:
@@ -48,15 +48,15 @@ def evaluate_noise_grid(model_getter, \
   m = 50000 # validation split
   accs = []
   noise_mapping = None
-  for noise_level in noise_grid:
+  for noise_fraction in noise_grid:
     x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping = \
-      noisify_mnist(noise_level, noise_mapping)
+      noisify_mnist(noise_fraction, noise_mapping)
 
     validation_data = (x_train[m:], np_utils.to_categorical(y_train[m:]))
     x_train = x_train[:m]
     y_train_noisy = y_train_noisy[:m]
     
-    model, callbacks, trained, model_name = model_getter(noise_level)
+    model, callbacks, trained, model_name = model_getter(noise_fraction)
     
     print(trained)
     if not trained:
@@ -67,8 +67,8 @@ def evaluate_noise_grid(model_getter, \
                 batch_size=256, \
                 epochs=500)
 
-    weights_file = './%s/%s_noise_level_%.2lf.h5' \
-                 % (model_name, model_name, noise_level)
+    weights_file = './%s/%s_noise_fraction_%.2lf.h5' \
+                 % (model_name, model_name, noise_fraction)
 
     model.load_weights(weights_file)
     
@@ -76,7 +76,7 @@ def evaluate_noise_grid(model_getter, \
     
   return noise_grid, accs
 
-def baseline_model_getter(noise_level):
+def baseline_model_getter(noise_fraction):
 
   # build the model for pre-training
   inputs = Input(shape=(784,))
@@ -92,7 +92,7 @@ def baseline_model_getter(noise_level):
 
   model = Model(inputs, q)
   weights_file = \
-    './baseline_model/baseline_model_noise_level_%.2lf.h5'%(noise_level)
+    './baseline_model/baseline_model_noise_fraction_%.2lf.h5'%(noise_fraction)
   callbacks = None
   trained = False
   try:
