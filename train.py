@@ -11,22 +11,26 @@ from keras import regularizers
 from keras.datasets import mnist
 from keras.utils import np_utils
 
-def noisify_mnist(noise_level):
+np.random.seed(0)
+
+def noisify_mnist(noise_level, noise_mapping=None):
   # load the data
   (x_train, y_train), (x_test, y_test) = mnist.load_data()
   x_train = np.reshape(x_train, (x_train.shape[0], 784))
   x_test = np.reshape(x_test, (x_test.shape[0], 784))
   
   # add label noise
-  np.random.seed(0)
-  noise_mapping = np.array([i for i in range(10)])
-  np.random.shuffle(noise_mapping)
+  if noise_mapping is None:
+    noise_mapping = np.array([i for i in range(10)])
+    np.random.shuffle(noise_mapping)
   noise_levels = [noise_level for i in range(10)]
+  
   print(noise_mapping)
   print(np.round(noise_levels, 3))
+  
   map = np.zeros((10,10))
   for i in range(10):
-    map[i,noise_mapping[i]] += 1
+    map[i,noise_mapping[i].astype('int32')] += 1
   
   y_train_noisy = np.zeros(y_train.shape)
   for i in range(y_train.shape[0]):
@@ -38,7 +42,41 @@ def noisify_mnist(noise_level):
       y_train_noisy[i] += y_train[i]
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
-def train_baseline_model(x_train, y_train, validation_data):
+def evaluate_noise_grid(model_getter, \
+                        noise_grid=[x for x in np.arange(0.3,0.52,0.02)]):
+
+  m = 50000 # validation split
+  accs = []
+  noise_mapping = None
+  for noise_level in noise_grid:
+    x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping = \
+      noisify_mnist(noise_level, noise_mapping)
+
+    validation_data = (x_train[m:], np_utils.to_categorical(y_train[m:]))
+    x_train = x_train[:m]
+    y_train_noisy = y_train_noisy[:m]
+    
+    model, callbacks, trained, model_name = model_getter(noise_level)
+    
+    print(trained)
+    if not trained:
+      model.fit(x_train[:m], \
+                np_utils.to_categorical(y_train_noisy[:m]), \
+                validation_data=validation_data, \
+                callbacks=callbacks, \
+                batch_size=256, \
+                epochs=500)
+
+    weights_file = './%s/%s_noise_level_%.2lf.h5' \
+                 % (model_name, model_name, noise_level)
+
+    model.load_weights(weights_file)
+    
+    accs.append(model.evaluate(x_test, np_utils.to_categorical(y_test)))
+    
+  return noise_grid, accs
+
+def baseline_model_getter(noise_level):
 
   # build the model for pre-training
   inputs = Input(shape=(784,))
@@ -48,35 +86,35 @@ def train_baseline_model(x_train, y_train, validation_data):
   x = Dense(300, activation='relu', \
     kernel_regularizer=regularizers.l2(0.0001), \
     bias_regularizer=regularizers.l2(0.0001))(x)
-  q = Dense(10, activation='relu', name='q',\
+  q = Dense(10, activation='softmax', name='q',\
     kernel_regularizer=regularizers.l2(0.0001), \
     bias_regularizer=regularizers.l2(0.0001))(x)
 
-  base_model = Model(inputs, q)
-  
-  sgd = SGD(lr=0.01)
-  base_model.compile(loss='categorical_crossentropy', \
-    optimizer=sgd, metrics=['acc'])
-
-  # train the model on the noisy labels
-  callbacks = [ModelCheckpoint('best_pre-training.h5', save_best_only=True, \
-    save_weights_only=True)]
-
+  model = Model(inputs, q)
+  weights_file = \
+    './baseline_model/baseline_model_noise_level_%.2lf.h5'%(noise_level)
+  callbacks = None
+  trained = False
   try:
-    base_model.load_weights('best_pre-training.h5')
-  except FileNotFoundError:
-    base_model.fit(x_train, np_utils.to_categorical(y_train), \
-      validation_data=validation_data, \
-      callbacks=callbacks, batch_size=256, epochs=500)
-  
-  return base_model
+    model.load_weights(weights_file)
+    trained = True
+  except OSError:
+    callbacks = [ModelCheckpoint(weights_file, \
+                                 save_best_only=True, \
+                                 save_weights_only=True)]
+  sgd = SGD(lr=0.01)
+  model.compile(loss='categorical_crossentropy', \
+                optimizer=sgd, \
+                metrics=['acc'])
+                  
+  return model, callbacks, trained, 'baseline_model'
   
 def train_model_mnist_recon_loss():
 
   x_train, y_train, y_train_noisy, x_test, y_test, map, _ = \
     noisify_mnist(0.48)
 
-  m = 50000
+  m = 50000 # validation split
   
   base_model = train_baseline_model(x_train[:m], y_train_noisy[:m], \
     validation_data=(x_train[m:], y_train[m:]))
@@ -103,7 +141,7 @@ def train_model_mnist_recon_loss():
   sgd = SGD(lr=0.01)
   model.compile(optimizer=sgd, metrics=['acc'], \
     loss={'t': 'categorical_crossentropy', 'recon': 'mse'},\
-    loss_weights={'t': 1., 'recon': 0.005})
+    loss_weights={'t': 1., 'recon': 0.005}) # beta = 0.005
 
   model.summary()
   callbacks = [ModelCheckpoint('best_training.h5', save_best_only=True, \
@@ -111,13 +149,13 @@ def train_model_mnist_recon_loss():
 
   try:
     model.load_weights('best_training.h5')
-  except FileNotFoundError:
-    model.fit(x_train[:50000], [np_utils.to_categorical(y_train_noisy[:50000]), x_train[:50000]], \
-      validation_data=(x_train[50000:], [np_utils.to_categorical(y_train[50000:]), x_train[50000:]]),\
+  except OSError:
+    model.fit(x_train[:m], [np_utils.to_categorical(y_train_noisy[:m]), x_train[:m]], \
+      validation_data=(x_train[m:], [np_utils.to_categorical(y_train[m:]), x_train[m:]]),\
       callbacks=callbacks, batch_size=256, epochs=500)
 
   print(base_model.evaluate(x_test, np_utils.to_categorical(y_test)))
-  print(base_model.evaluate(x_train[50000:], np_utils.to_categorical(y_train[50000:])))
+  print(base_model.evaluate(x_train[m:], np_utils.to_categorical(y_train[m:])))
 
   W = model.get_layer('t').get_weights()[0]
 
@@ -129,7 +167,8 @@ def train_model_mnist_recon_loss():
   plt.show()
 
 def main():
-  train_model_mnist_recon_loss()
+  #train_model_mnist_recon_loss()
+  evaluate_noise_grid(baseline_model_getter)
 
 if __name__ == '__main__':
   main()
