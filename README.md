@@ -6,6 +6,6 @@ Below are the results of experiments from the original paper using MNIST.
 
 ![alt text](https://github.com/dwright04/Noisy-Labels-with-Bootstrapping/blob/master/Reed_et_al_figure_2.png)
 
-### Open questions for reproducing
+### Open questions for reproducing results
 * What data is the classification accuracy in Figure 2. measured on?
 * How do they determine when to stop training?
