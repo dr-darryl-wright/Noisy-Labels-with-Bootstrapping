@@ -72,7 +72,7 @@ def evaluate_noise_grid(model_getter, \
 
     model.load_weights(weights_file)
     
-    accs.append(model.evaluate(x_test, np_utils.to_categorical(y_test)))
+    accs.append(model.evaluate(x_test, np_utils.to_categorical(y_test))[1])
     
   return noise_grid, accs
 
