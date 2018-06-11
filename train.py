@@ -119,7 +119,7 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   ax1.ylabel('Classification accuracy (%)')
   ax1.xlabel('Noise fraction')
   plt.legend(loc='lower left')
-  plt.show()
+  plt.savefig('replicated_results.png')
 
 def train_model_mnist_recon_loss():
 
