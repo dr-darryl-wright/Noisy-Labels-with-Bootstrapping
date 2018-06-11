@@ -18,7 +18,7 @@ Below are the results of experiments from the original paper using MNIST.
 
 
 #### Running log
-**11-06-2018** Updating the code as described in previous post.  It is unclear if the results should be measured on the noisy training labels or the orginal *clean* labels.
+**11-06-2018** Updating the code as described in previous post.  It is unclear if the results should be measured on the noisy training labels or the orginal *clean* labels. It must be the noisy results given the high accuracies shown in the plot.
 
 **11-06-2018** Training as below does not reproduce the results from the paper.  The test accuracy does not evolve as smoothly with noise fraction as the results appear in the paper.  It seems more likely the results are measured on the training set, with no validation split in which case patience should be used to terminate training instead of checkpointing.
 
