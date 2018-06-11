@@ -6,7 +6,7 @@ from matplotlib.ticker import FormatStrFormatter
 from keras.layers import Input, Dense, Lambda
 from keras.models import Model
 from keras.optimizers import SGD
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import EarlyStopping
 from keras import backend as K
 from keras import regularizers
 
@@ -47,34 +47,28 @@ def noisify_mnist(noise_fraction, noise_mapping=None):
 def evaluate_noise_grid(model_getter, \
                         noise_grid=[x for x in np.arange(0.3,0.51,0.02)]):
 
-  m = 50000 # validation split
   accs = []
   noise_mapping = None
   for noise_fraction in noise_grid:
     x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping = \
       noisify_mnist(noise_fraction, noise_mapping)
-
-    validation_data = (x_train[m:], np_utils.to_categorical(y_train[m:]))
-    x_train = x_train[:m]
-    y_train_noisy = y_train_noisy[:m]
     
     model, callbacks, trained, model_name = model_getter(noise_fraction)
     
-    print(trained)
+    weights_file = './%s/%s_noise_fraction_%.2lf.h5' \
+                 % (model_name, model_name, noise_fraction)
+    
     if not trained:
       model.fit(x_train[:m], \
                 np_utils.to_categorical(y_train_noisy[:m]), \
-                validation_data=validation_data, \
                 callbacks=callbacks, \
                 batch_size=256, \
                 epochs=500)
-
-    weights_file = './%s/%s_noise_fraction_%.2lf.h5' \
-                 % (model_name, model_name, noise_fraction)
-
+      mode.save(weights_file)
+      
     model.load_weights(weights_file)
     
-    accs.append(model.evaluate(x_test, np_utils.to_categorical(y_test))[1])
+    accs.append(model.evaluate(x_train, np_utils.to_categorical(y_train_noisy))[1])
     
   return noise_grid, accs
 
@@ -101,9 +95,8 @@ def baseline_model_getter(noise_fraction):
     model.load_weights(weights_file)
     trained = True
   except OSError:
-    callbacks = [ModelCheckpoint(weights_file, \
-                                 save_best_only=True, \
-                                 save_weights_only=True)]
+    callbacks = [EarlyStopping('loss', mode='auto')]
+  
   sgd = SGD(lr=0.01)
   model.compile(loss='categorical_crossentropy', \
                 optimizer=sgd, \
