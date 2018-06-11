@@ -116,7 +116,8 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   ax1 = fig.add_subplot(1,3,1)
   for i,accs in enumerate(accs_list):
     ax1.plot(noise_grid, accs, '-', color=colours[i])
-    ax1.plot(noise_grid, accs, 'o', color=colours[i], label=model_names[i])
+    ax1.plot(noise_grid, accs, 'o', markeredgecolor=colours[i], \
+             markerfacecolor='None', label=model_names[i])
   ax1.set_title('MNIST with random fixed label noise')
   ax1.set_ylabel('Classification accuracy (%)')
   ax1.set_xlabel('Noise fraction')
@@ -127,8 +128,8 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   # the abs method is used to make sure that all numbers are positive
   # because x and y axis of an axes maybe inversed.
   ax1.set_aspect(abs((xright-xleft)/(ybottom-ytop))*1.0)
-  ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
   plt.legend(loc='lower left')
+  ax1.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
   plt.savefig('replicated_results.png')
 
 def train_model_mnist_recon_loss():
@@ -192,8 +193,6 @@ def main():
   
   noise_grid, accs = evaluate_noise_grid(baseline_model_getter)
 
-  print(accs)
-  print(noise_grid)
   plot_results(noise_grid, [accs], ['baseline'], ['r'])
 
 if __name__ == '__main__':
