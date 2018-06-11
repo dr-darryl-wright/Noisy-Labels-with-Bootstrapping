@@ -64,7 +64,7 @@ def evaluate_noise_grid(model_getter, \
                 callbacks=callbacks, \
                 batch_size=256, \
                 epochs=500)
-      mode.save(weights_file)
+      model.save(weights_file)
 
     model.load_weights(weights_file)
     
