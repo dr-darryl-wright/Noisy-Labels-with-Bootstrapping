@@ -43,7 +43,7 @@ def noisify_mnist(noise_fraction, noise_mapping=None):
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
 def evaluate_noise_grid(model_getter, \
-                        noise_grid=[x for x in np.arange(0.3,0.52,0.02)]):
+                        noise_grid=[x for x in np.arange(0.3,0.5,0.02)]):
 
   m = 50000 # validation split
   accs = []
@@ -119,6 +119,7 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   ax1.set_ylabel('Classification accuracy (%)')
   ax1.set_xlabel('Noise fraction')
   plt.legend(loc='lower left')
+  plt.axes().set_aspect('equal', 'datalim')
   plt.savefig('replicated_results.png')
 
 def train_model_mnist_recon_loss():
