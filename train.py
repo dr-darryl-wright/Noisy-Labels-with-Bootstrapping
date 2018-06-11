@@ -108,7 +108,19 @@ def baseline_model_getter(noise_fraction):
                 metrics=['acc'])
                   
   return model, callbacks, trained, 'baseline_model'
-  
+
+def plot_results(noise_grid, accs_list, model_names, colours):
+  fig = plt.figure()
+  ax1 = fig.add_subplot(1,3,1)
+  for i,accs in enumerate(accs_list):
+    ax1.plot(noise_grid, accs, '-', color=colours[i])
+    ax1.plot(noise_grid, accs, 'o', color=colours[i], label=model_names[i])
+  ax1.title('MNIST with random fixed label noise')
+  ax1.ylabel('Classification accuracy (%)')
+  ax1.xlabel('Noise fraction')
+  plt.legend(loc='lower left')
+  plt.show()
+
 def train_model_mnist_recon_loss():
 
   x_train, y_train, y_train_noisy, x_test, y_test, map, _ = \
@@ -167,8 +179,10 @@ def train_model_mnist_recon_loss():
   plt.show()
 
 def main():
-  #train_model_mnist_recon_loss()
-  evaluate_noise_grid(baseline_model_getter)
+  
+  noise_grid, accs = evaluate_noise_grid(baseline_model_getter)
+
+  plot_results(noise_grid, [accs], ['baseline'], ['r'])
 
 if __name__ == '__main__':
   main()
