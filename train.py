@@ -1,6 +1,3 @@
-import matplotlib
-matplotlib.use('GTK')
-
 import numpy as np
 import matplotlib.pyplot as plt
 
