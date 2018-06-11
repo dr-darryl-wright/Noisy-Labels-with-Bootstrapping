@@ -59,8 +59,8 @@ def evaluate_noise_grid(model_getter, \
                  % (model_name, model_name, noise_fraction)
     
     if not trained:
-      model.fit(x_train[:m], \
-                np_utils.to_categorical(y_train_noisy[:m]), \
+      model.fit(x_train, \
+                np_utils.to_categorical(y_train_noisy), \
                 callbacks=callbacks, \
                 batch_size=256, \
                 epochs=500)
