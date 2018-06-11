@@ -118,6 +118,7 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   ax1.set_title('MNIST with random fixed label noise')
   ax1.set_ylabel('Classification accuracy (%)')
   ax1.set_xlabel('Noise fraction')
+  ax1.set_ylim(0.0,1.0)
   plt.legend(loc='lower left')
   plt.axes().set_aspect('equal', 'datalim')
   plt.savefig('replicated_results.png')
@@ -183,6 +184,7 @@ def main():
   
   noise_grid, accs = evaluate_noise_grid(baseline_model_getter)
 
+  print(accs)
   plot_results(noise_grid, [accs], ['baseline'], ['r'])
 
 if __name__ == '__main__':
