@@ -115,9 +115,9 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   for i,accs in enumerate(accs_list):
     ax1.plot(noise_grid, accs, '-', color=colours[i])
     ax1.plot(noise_grid, accs, 'o', color=colours[i], label=model_names[i])
-  ax1.title('MNIST with random fixed label noise')
-  ax1.ylabel('Classification accuracy (%)')
-  ax1.xlabel('Noise fraction')
+  ax1.set_title('MNIST with random fixed label noise')
+  ax1.set_ylabel('Classification accuracy (%)')
+  ax1.set_xlabel('Noise fraction')
   plt.legend(loc='lower left')
   plt.savefig('replicated_results.png')
 
