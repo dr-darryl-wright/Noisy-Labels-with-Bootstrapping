@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from matplotlib.ticker import FormatStrFormatter
+
 from keras.layers import Input, Dense, Lambda
 from keras.models import Model
 from keras.optimizers import SGD
@@ -110,7 +112,7 @@ def baseline_model_getter(noise_fraction):
   return model, callbacks, trained, 'baseline_model'
 
 def plot_results(noise_grid, accs_list, model_names, colours):
-  fig = plt.figure()
+  fig = plt.figure(figsize=(15, 5))
   ax1 = fig.add_subplot(1,3,1)
   for i,accs in enumerate(accs_list):
     ax1.plot(noise_grid, accs, '-', color=colours[i])
@@ -119,8 +121,14 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   ax1.set_ylabel('Classification accuracy (%)')
   ax1.set_xlabel('Noise fraction')
   ax1.set_ylim(0.0,1.0)
+  ax1.set_xlim(0.3,0.5)
+  xleft, xright = ax1.get_xlim()
+  ybottom, ytop = ax1.get_ylim()
+  # the abs method is used to make sure that all numbers are positive
+  # because x and y axis of an axes maybe inversed.
+  ax1.set_aspect(abs((xright-xleft)/(ybottom-ytop))*1.0)
+  ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
   plt.legend(loc='lower left')
-  plt.axes().set_aspect('equal', 'datalim')
   plt.savefig('replicated_results.png')
 
 def train_model_mnist_recon_loss():
@@ -185,6 +193,7 @@ def main():
   noise_grid, accs = evaluate_noise_grid(baseline_model_getter)
 
   print(accs)
+  print(noise_grid)
   plot_results(noise_grid, [accs], ['baseline'], ['r'])
 
 if __name__ == '__main__':
