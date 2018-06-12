@@ -12,7 +12,9 @@ Below are the results of experiments from the original paper using MNIST.
 * What data is the classification accuracy in Figure 2. measured on?
   * I'm measuring the classification accuracy on the noisy training labels.
 * How do they determine when to stop training?
+  * using early stopping monitoring training loss with a patience of 5. 
 * What is the mini-batch size?
+  * using 256
 
 ## Replicated MNIST with noisy labels results
 ![alt text](https://github.com/dwright04/Noisy-Labels-with-Bootstrapping/blob/master/replicated_results.png)
