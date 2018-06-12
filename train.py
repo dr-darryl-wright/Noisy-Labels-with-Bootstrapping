@@ -6,7 +6,7 @@ from matplotlib.ticker import FormatStrFormatter
 from keras.layers import Input, Dense, Lambda
 from keras.models import Model
 from keras.optimizers import SGD
-from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras import backend as K
 from keras import regularizers
 
@@ -68,7 +68,9 @@ def evaluate_noise_grid(model_getter, \
 
     model.load_weights(weights_file)
     
-    accs.append(model.evaluate(x_train, np_utils.to_categorical(y_train_noisy))[1])
+    acc = model.evaluate(x_train, np_utils.to_categorical(y_train_noisy))[1]
+    print(acc)
+    accs.append(acc)
     
   return noise_grid, accs
 
@@ -95,7 +97,8 @@ def baseline_model_getter(noise_fraction):
     model.load_weights(weights_file)
     trained = True
   except OSError:
-    callbacks = [EarlyStopping('loss', mode='auto', patience=5)]
+    callbacks = [ModelCheckpoint(weights_file, 'loss', save_best_only=True), \
+                 EarlyStopping('loss', mode='auto', patience=5)]
   
   sgd = SGD(lr=0.01)
   model.compile(loss='categorical_crossentropy', \
@@ -103,6 +106,53 @@ def baseline_model_getter(noise_fraction):
                 metrics=['acc'])
                   
   return model, callbacks, trained, 'baseline_model'
+
+def bootstrap_recon_model_getter(noise_fraction):
+
+  baseline_model, _, trained, _ = baseline_model_getter(noise_fraction)
+
+  try:
+    assert(trained == True)
+  except AssertionError:
+    exit('Baseline models must be trained first.')
+
+  # build the consistency model
+  inputs = Input(shape=(784,))
+  q = baseline_model(inputs)
+  
+  t_layer = Dense(10, activation='softmax', name='t', \
+    kernel_regularizer=regularizers.l2(0.0001), \
+    kernel_initializer='identity', \
+    use_bias=False)
+
+  t = t_layer(q)
+
+  recon = Dense(784, activation='relu', name='recon', \
+    kernel_regularizer=regularizers.l2(0.0001), \
+    bias_regularizer=regularizers.l2(0.0001))(q)
+  
+  model = Model(inputs, [t, recon])
+
+  weights_file = \
+    './bootstrap_recon_model/bootstrap_recon_noise_fraction_%.2lf.h5' \
+    %(noise_fraction)
+
+  callbacks = None
+  trained = False
+  try:
+    model.load_weights(weights_file)
+    trained = True
+  except OSError:
+    callbacks = [ModelCheckpoint(weights_file, 'loss', save_best_only=True), \
+                 EarlyStopping('loss', mode='auto', patience=5)]
+  
+  sgd = SGD(lr=0.01)
+  beta = 0.005
+  model.compile(optimizer=sgd, metrics=['acc'], \
+    loss={'t': 'categorical_crossentropy', 'recon': 'mse'},\
+    loss_weights={'t': 1., 'recon': beta})
+                  
+  return model, callbacks, trained, 'bootstrap_recon_model'
 
 def plot_results(noise_grid, accs_list, model_names, colours):
   fig = plt.figure(figsize=(15, 5))
@@ -114,7 +164,7 @@ def plot_results(noise_grid, accs_list, model_names, colours):
   ax1.set_title('MNIST with random fixed label noise')
   ax1.set_ylabel('Classification accuracy (%)')
   ax1.set_xlabel('Noise fraction')
-  ax1.set_ylim(0.0,1.0)
+  ax1.set_ylim(0.4,1.0)
   ax1.set_xlim(0.3,0.5)
   xleft, xright = ax1.get_xlim()
   ybottom, ytop = ax1.get_ylim()
