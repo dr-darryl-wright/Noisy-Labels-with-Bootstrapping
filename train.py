@@ -13,18 +13,31 @@ from keras import regularizers
 from keras.datasets import mnist
 from keras.utils import np_utils
 
-np.random.seed(0)
+def get_noise_mapping(seed=0):
+  np.random.seed(seed)
+  noise_mapping = np.array([i for i in range(10)])
+  np.random.shuffle(noise_mapping)
+  return noise_mapping
 
-def noisify_mnist(noise_fraction, noise_mapping=None):
+def noisify_labels(y, noise_fractions, noise_mapping, seed=0):
+  np.random.seed(seed)
+  y_noisy = np.zeros(y.shape)
+  for i in range(y.shape[0]):
+    if np.random.rand() <= noise_fractions[y[i]]:
+      #print('%d -> %d' % (y_train[i], noise_mapping[y_train[i]]))
+      y_noisy[i] += noise_mapping[y[i]]
+    else:
+      #print('%d -> %d' % (y_train[i], y_train[i]))
+      y_noisy[i] += y[i]
+  return y_noisy
+
+def noisify_mnist(noise_fraction):
   # load the data
   (x_train, y_train), (x_test, y_test) = mnist.load_data()
   x_train = np.reshape(x_train, (x_train.shape[0], 784))
   x_test = np.reshape(x_test, (x_test.shape[0], 784))
   
-  # add label noise
-  if noise_mapping is None:
-    noise_mapping = np.array([i for i in range(10)])
-    np.random.shuffle(noise_mapping)
+  noise_mapping = get_noise_mapping()
   noise_fractions = [noise_fraction for i in range(10)]
   
   print(noise_mapping)
@@ -34,14 +47,8 @@ def noisify_mnist(noise_fraction, noise_mapping=None):
   for i in range(10):
     map[i,noise_mapping[i].astype('int32')] += 1
   
-  y_train_noisy = np.zeros(y_train.shape)
-  for i in range(y_train.shape[0]):
-    if np.random.rand() <= noise_fractions[y_train[i]]:
-      #print('%d -> %d' % (y_train[i], noise_mapping[y_train[i]]))
-      y_train_noisy[i] += noise_mapping[y_train[i]]
-    else:
-      #print('%d -> %d' % (y_train[i], y_train[i]))
-      y_train_noisy[i] += y_train[i]
+  y_train_noisy = noisify_labels(y, noise_fractions, noise_mapping)
+
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
 def evaluate_noise_grid(model_getter, \
@@ -51,7 +58,7 @@ def evaluate_noise_grid(model_getter, \
   noise_mapping = None
   for noise_fraction in noise_grid:
     x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping = \
-      noisify_mnist(noise_fraction, noise_mapping)
+      noisify_mnist(noise_fraction)
     
     model, callbacks, trained, model_name = model_getter(noise_fraction)
     
@@ -68,7 +75,7 @@ def evaluate_noise_grid(model_getter, \
 
     model.load_weights(weights_file)
     
-    acc = model.evaluate(x_train, np_utils.to_categorical(y_train_noisy))[1]
+    acc = model.evaluate(x_test, np_utils.to_categorical(y_test))[1]
     print(acc)
     accs.append(acc)
     
@@ -97,7 +104,7 @@ def baseline_model_getter(noise_fraction):
     model.load_weights(weights_file)
     trained = True
   except OSError:
-    callbacks = [ModelCheckpoint(weights_file, 'loss', save_best_only=True), \
+    callbacks = [ModelCheckpoint(weights_file, 'loss', verbose=1, save_best_only=True), \
                  EarlyStopping('loss', mode='auto', patience=5)]
   
   sgd = SGD(lr=0.01)
