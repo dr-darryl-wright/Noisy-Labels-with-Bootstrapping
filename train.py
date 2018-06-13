@@ -47,7 +47,7 @@ def noisify_mnist(noise_fraction):
   for i in range(10):
     map[i,noise_mapping[i].astype('int32')] += 1
   
-  y_train_noisy = noisify_labels(y, noise_fractions, noise_mapping)
+  y_train_noisy = noisify_labels(y_train, noise_fractions, noise_mapping)
 
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
