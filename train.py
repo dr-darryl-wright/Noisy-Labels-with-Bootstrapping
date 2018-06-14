@@ -13,13 +13,13 @@ from keras import regularizers
 from keras.datasets import mnist
 from keras.utils import np_utils
 
-def get_noise_mapping(seed=0):
+def get_noise_mapping(seed=1):
   np.random.seed(seed)
   noise_mapping = np.array([i for i in range(10)])
   np.random.shuffle(noise_mapping)
   return noise_mapping
 
-def noisify_labels(y, noise_fractions, noise_mapping, seed=0):
+def noisify_labels(y, noise_fractions, noise_mapping, seed=1):
   np.random.seed(seed)
   y_noisy = np.zeros(y.shape)
   for i in range(y.shape[0]):
