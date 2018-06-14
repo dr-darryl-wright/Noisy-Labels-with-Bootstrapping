@@ -75,7 +75,7 @@ def evaluate_noise_grid(model_getter, \
 
     model.load_weights(weights_file)
     
-    acc = model.evaluate(x_train, np_utils.to_categorical(y_train_noisy))[1]
+    acc = model.evaluate(x_test, np_utils.to_categorical(y_test))[1]
     print(acc)
     accs.append(acc)
     
@@ -89,6 +89,9 @@ def baseline_model_getter(noise_fraction):
     kernel_regularizer=regularizers.l2(0.0001), \
     bias_regularizer=regularizers.l2(0.0001))(inputs)
   x = Dense(300, activation='relu', \
+    kernel_regularizer=regularizers.l2(0.0001), \
+    bias_regularizer=regularizers.l2(0.0001))(x)
+  x = Dense(10, activation='relu', \
     kernel_regularizer=regularizers.l2(0.0001), \
     bias_regularizer=regularizers.l2(0.0001))(x)
   q = Dense(10, activation='softmax', name='q',\
