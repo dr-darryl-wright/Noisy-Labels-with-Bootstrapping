@@ -75,7 +75,7 @@ def evaluate_noise_grid(model_getter, \
 
     model.load_weights(weights_file)
     
-    acc = model.evaluate(x_test, np_utils.to_categorical(y_test))[1]
+    acc = model.evaluate(x_train, np_utils.to_categorical(y_train_noisy))[1]
     print(acc)
     accs.append(acc)
     
@@ -105,7 +105,7 @@ def baseline_model_getter(noise_fraction):
     trained = True
   except OSError:
     callbacks = [ModelCheckpoint(weights_file, 'loss', verbose=1, save_best_only=True), \
-                 EarlyStopping('loss', mode='auto', patience=5)]
+                 EarlyStopping('loss', mode='auto', patience=10)]
   
   sgd = SGD(lr=0.01)
   model.compile(loss='categorical_crossentropy', \
