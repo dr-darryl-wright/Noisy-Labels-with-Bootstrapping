@@ -1,5 +1,5 @@
 # Noisy-Labels-with-Bootstrapping
-Keras implementation of (Training Deep Neural Networks on Noisy Labels with Bootstrapping, Reed et al. 2015)[https://arxiv.org/pdf/1412.6596.pdf]
+Keras implementation of [Training Deep Neural Networks on Noisy Labels with Bootstrapping, Reed et al. 2015](https://arxiv.org/pdf/1412.6596.pdf)
 
 ## MNIST with noisy Labels
 Below are the results of experiments from the original paper using MNIST.
