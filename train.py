@@ -110,7 +110,7 @@ def baseline_model_getter(noise_fraction):
     callbacks = [ModelCheckpoint(weights_file, 'loss', verbose=1, save_best_only=True), \
                  EarlyStopping('loss', mode='auto', patience=10)]
   
-  sgd = SGD(lr=0.01)
+  sgd = SGD(lr=0.001)
   model.compile(loss='categorical_crossentropy', \
                 optimizer=sgd, \
                 metrics=['acc'])
