@@ -70,7 +70,7 @@ def evaluate_noise_grid(model_getter, \
                 np_utils.to_categorical(y_train_noisy), \
                 callbacks=callbacks, \
                 batch_size=256, \
-                epochs=500)
+                epochs=1000)
       model.save(weights_file)
 
     model.load_weights(weights_file)
