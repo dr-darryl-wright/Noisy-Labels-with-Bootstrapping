@@ -9,12 +9,17 @@ Below are the results of experiments from the original paper using MNIST.
 ---
 
 ### Open questions for reproducing results
-* What data is the classification accuracy in Figure 2. measured on?
-  * I'm measuring the classification accuracy on the noisy training labels.
-* How do they determine when to stop training?
-  * using early stopping monitoring training loss with a patience of 5. 
-* What is the mini-batch size?
-  * using 256
+1) The models are trained on 60000 (MNIST training set) noisy labels.
+
+2) The classification accuracy in Figure 2. is calculated on 10000 (MNIST test set) true labels. 
+
+3) The architecture is 784-500-300-10 + a softmax layer with 10 units, and not 784-500-300 + a softmax layer with 10 units i.e. the 10 unit layer in the architecture listed in the paper is hidden and not the output layer.
+
+4) The classification accuracy plotted is measured on a single realisation of the model and not the average of retraining multiple times on, for example, different partitions of the data (k-fold cross validation perhaps) or with different noise patterns. 
+
+5) The size of the mini-batch has negligible effect and so choosing 32 or 256 shouldn't have a huge impact on the measured accuracy.
+
+6) What is the stopping criteria for training? Assuming 1) and 2) are correct and there is no validation set.
 
 ## Replicated MNIST with noisy labels results
 ![alt text](https://github.com/dwright04/Noisy-Labels-with-Bootstrapping/blob/master/replicated_results.png)
