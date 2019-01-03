@@ -114,7 +114,7 @@ def baseline_model_getter(noise_fraction):
     trained = True
   except OSError:
     callbacks = [ModelCheckpoint(weights_file, 'val_loss', verbose=1, save_best_only=True), \
-                 EarlyStopping('val_loss', mode='auto', patience=5)]
+                 EarlyStopping('loss', mode='auto', patience=5)]
   
   #optimizer = SGD(lr=0.001, momentum=0.9)
   #optimizer = Adam(lr=0.001)
