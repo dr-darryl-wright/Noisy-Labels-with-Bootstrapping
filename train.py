@@ -92,12 +92,16 @@ def baseline_model_getter(noise_fraction):
   # build the model for pre-training
   inputs = Input(shape=(784,))
   x = Dense(500, activation='relu', \
+    bias_regularizer=regularizers.l2(0.0001), \
     kernel_regularizer=regularizers.l2(0.0001))(inputs)
   x = Dense(300, activation='relu', \
+    bias_regularizer=regularizers.l2(0.0001), \
     kernel_regularizer=regularizers.l2(0.0001))(x)
   x = Dense(10, activation='relu', \
+    bias_regularizer=regularizers.l2(0.0001), \
     kernel_regularizer=regularizers.l2(0.0001))(x)
   q = Dense(10, activation='softmax', name='q', \
+    bias_regularizer=regularizers.l2(0.0001), \
     kernel_regularizer=regularizers.l2(0.0001))(x)
 
   model = Model(inputs, q)
