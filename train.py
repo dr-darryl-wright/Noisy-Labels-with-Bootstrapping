@@ -20,6 +20,7 @@ def get_noise_mapping(seed=1):
   return noise_mapping
 
 def noisify_labels(y, noise_fractions, noise_mapping, seed=1):
+  
   np.random.seed(seed)
   y_noisy = np.zeros(y.shape)
   for i in range(y.shape[0]):
@@ -34,8 +35,9 @@ def noisify_labels(y, noise_fractions, noise_mapping, seed=1):
 def noisify_mnist(noise_fraction):
   # load the data
   (x_train, y_train), (x_test, y_test) = mnist.load_data()
-  x_train = np.reshape(x_train, (x_train.shape[0], 784))
-  x_test = np.reshape(x_test, (x_test.shape[0], 784))
+
+  x_train = np.reshape(x_train, (x_train.shape[0], 784)) / 255.
+  x_test = np.reshape(x_test, (x_test.shape[0], 784)) / 255.
   
   noise_mapping = get_noise_mapping()
   noise_fractions = [noise_fraction for i in range(10)]
@@ -52,7 +54,8 @@ def noisify_mnist(noise_fraction):
   return x_train, y_train, y_train_noisy, x_test, y_test, map, noise_mapping
 
 def evaluate_noise_grid(model_getter, \
-                        noise_grid=[x for x in np.arange(0.3,0.51,0.02)]):
+                        noise_grid=[x for x in np.arange(0.3,0.51,0.02)], \
+                        n_splits=5):
 
   accs = []
   noise_mapping = None
@@ -65,12 +68,15 @@ def evaluate_noise_grid(model_getter, \
     weights_file = './%s/%s_noise_fraction_%.2lf.h5' \
                  % (model_name, model_name, noise_fraction)
     
+    validation_data = (x_test, np_utils.to_categorical(y_test))
+
     if not trained:
       model.fit(x_train, \
                 np_utils.to_categorical(y_train_noisy), \
+                validation_data=validation_data, \
                 callbacks=callbacks, \
-                batch_size=256, \
-                epochs=1000)
+                batch_size=32, \
+                epochs=10000)
       model.save(weights_file)
 
     model.load_weights(weights_file)
@@ -86,17 +92,13 @@ def baseline_model_getter(noise_fraction):
   # build the model for pre-training
   inputs = Input(shape=(784,))
   x = Dense(500, activation='relu', \
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(inputs)
+    kernel_regularizer=regularizers.l2(0.0001))(inputs)
   x = Dense(300, activation='relu', \
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(x)
+    kernel_regularizer=regularizers.l2(0.0001))(x)
   x = Dense(10, activation='relu', \
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(x)
-  q = Dense(10, activation='softmax', name='q',\
-    kernel_regularizer=regularizers.l2(0.0001), \
-    bias_regularizer=regularizers.l2(0.0001))(x)
+    kernel_regularizer=regularizers.l2(0.0001))(x)
+  q = Dense(10, activation='softmax', name='q', \
+    kernel_regularizer=regularizers.l2(0.0001))(x)
 
   model = Model(inputs, q)
   weights_file = \
@@ -108,11 +110,13 @@ def baseline_model_getter(noise_fraction):
     trained = True
   except OSError:
     callbacks = [ModelCheckpoint(weights_file, 'loss', verbose=1, save_best_only=True), \
-                 EarlyStopping('loss', mode='auto', patience=10)]
+                 EarlyStopping('loss', mode='auto', patience=1)]
   
-  sgd = SGD(lr=0.001)
+  #optimizer = SGD(lr=0.001, momentum=0.9)
+  #optimizer = Adam(lr=0.001)
+  optimizer = 'adam'
   model.compile(loss='categorical_crossentropy', \
-                optimizer=sgd, \
+                optimizer=optimizer, \
                 metrics=['acc'])
                   
   return model, callbacks, trained, 'baseline_model'
@@ -154,7 +158,8 @@ def bootstrap_recon_model_getter(noise_fraction):
     trained = True
   except OSError:
     callbacks = [ModelCheckpoint(weights_file, 'loss', save_best_only=True), \
-                 EarlyStopping('loss', mode='auto', patience=5)]
+                 EarlyStopping('loss', mode='auto', patience=5), \
+                 ReduceLROnPlateau(monitor='loss')]
   
   sgd = SGD(lr=0.01)
   beta = 0.005
