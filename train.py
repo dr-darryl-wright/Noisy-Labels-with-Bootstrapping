@@ -75,7 +75,7 @@ def evaluate_noise_grid(model_getter, \
                 np_utils.to_categorical(y_train_noisy), \
                 validation_data=validation_data, \
                 callbacks=callbacks, \
-                batch_size=32, \
+                batch_size=128, \
                 epochs=10000)
       model.save(weights_file)
 
@@ -106,7 +106,7 @@ def baseline_model_getter(noise_fraction):
 
   model = Model(inputs, q)
   weights_file = \
-    './baseline_model/baseline_model_noise_fraction_%.2lf.h5'%(noise_fraction)
+    './baseline_model/best_baseline_model_noise_fraction_%.2lf.h5'%(noise_fraction)
   callbacks = None
   trained = False
   try:
@@ -117,12 +117,13 @@ def baseline_model_getter(noise_fraction):
                  EarlyStopping('loss', mode='auto', patience=5)]
   
   #optimizer = SGD(lr=0.001, momentum=0.9)
+  optimizer = SGD(lr=0.001)
   #optimizer = Adam(lr=0.001)
-  optimizer = 'adam'
+  #optimizer = 'adam'
   model.compile(loss='categorical_crossentropy', \
                 optimizer=optimizer, \
                 metrics=['acc'])
-                  
+  
   return model, callbacks, trained, 'baseline_model'
 
 def bootstrap_recon_model_getter(noise_fraction):
@@ -254,7 +255,6 @@ def train_model_mnist_recon_loss():
 def main():
   
   noise_grid, accs = evaluate_noise_grid(baseline_model_getter)
-
   plot_results(noise_grid, [accs], ['baseline'], ['r'])
 
 if __name__ == '__main__':
