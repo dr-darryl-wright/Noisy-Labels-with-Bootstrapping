@@ -102,3 +102,4 @@ ENV/
 
 baseline_model/
 .md~
+.h5
